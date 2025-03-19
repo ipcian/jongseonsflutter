@@ -1,0 +1,8 @@
+/* 
+  InfoPlist.strings
+  Runner
+
+  Created by Jongseon Yun on 3/19/25.
+  
+*/
+CFBundleDisplayName = "Jongseon's Flutter";
