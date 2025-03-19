@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- 스플래시 테마 -->
+    <style name="Theme.JongseonsFlutter" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <!-- 스플래시 배경 색상 설정 -->
+        <item name="android:windowIsTranslucent">true</item>
+        <!-- 부드러운 종료 애니메이션 적용 -->
+        <item name="android:windowExitTransition">@transition/splash_exit</item>
+    </style>
+</resources>

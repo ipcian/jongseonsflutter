@@ -1,0 +1,9 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Base application theme. -->
+    <style name="Theme.JongseonsFlutter" parent="@style/Theme.AppCompat.Light.NoActionBar">
+        <!-- Primary brand color. -->
+        <!-- Customize your theme here. -->
+        <!-- 부드러운 종료 애니메이션 적용 -->
+        <item name="android:windowExitTransition">@transition/splash_exit</item>
+    </style>
+</resources>
