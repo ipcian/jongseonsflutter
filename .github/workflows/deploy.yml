@@ -46,7 +46,7 @@ jobs:
       - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.13.5'
+          flutter-version: '3.31.0-1.0.pre.131'
 
       - name: Decode Keystore (Android)
         run: |
