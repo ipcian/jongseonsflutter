@@ -1,0 +1,12 @@
+platform :android do
+  desc "Build and deploy the Android app to Google Play"
+  package_name "com.ipcian.jongseonsflutter"
+  lane :deploy do
+    # Google Play로 앱 배포
+    supply(
+      track: "internal", # 배포 트랙: production, beta, internal
+      package_name: "com.ipcian.jongseonsflutter", # 앱 패키지 이름
+      aab: "../../build/app/outputs/bundle/release/app-release.aab" # 빌드된 AAB 파일 경로
+    )
+  end
+end
