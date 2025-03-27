@@ -1,20 +1,15 @@
-name: Flutter CI/CD
+name: Flutter CI/CD Workflow
 
 on:
   push:
     branches:
-      - main
+      - main  # main 브랜치로 push될 때 실행
   pull_request:
     branches:
-      - main
+      - main  # main 브랜치의 변경 사항에 대해 pull_request 실행
 
 env:
-  GITHUB_TOKEN: ${{ secrets.TARGET_REPO_TOKEN }}  # ✅ GitHub 인증을 위한 토큰
-  BRANCH: ${{ secrets.BRANCH }}  # ✅ 배포할 브랜치
-  COMMIT_AUTHOR: ${{ secrets.COMMIT_AUTHOR }}  # ✅ 커밋 작성자
-  COMMIT_EMAIL: ${{ secrets.COMMIT_EMAIL }}  # ✅ 커밋 이메일
-  COMMIT_MESSAGE: ${{ secrets.COMMIT_MESSAGE }}  # ✅ 커밋 메시지
-  TARGET_REPO: ${{ secrets.TARGET_REPO }}  # ✅ 타깃 레포
+  # 공통 환경 변수
   ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
   ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
   ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -23,118 +18,118 @@ env:
   APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
   APP_STORE_CONNECT_API_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_ISSUER_ID }}
   APP_STORE_CONNECT_API_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_API_PRIVATE_KEY }}
-  MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
 
 permissions:
-  contents: write  # ✅ 권한 추가
+  contents: write  # 깃허브 Repository의 콘텐츠 접근 권한 (필수)
 
 jobs:
   android-build:
-    name: Build & Deploy Android
+    name: Build & Deploy Android App
     runs-on: ubuntu-latest
+
     steps:
+      # 1. 레포지토리 체크아웃
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # 2. Flutter 설치
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
-          node-version: 20
+          flutter-version: 'stable'
 
-      - name: Install Dependencies
-        run: npm install
-
-      - name: Setup Java & Gradle
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Decode Keystore (Android)
+      # 3. Android Keystore 복호화 및 저장
+      - name: Decode Keystore
         run: |
           set +x
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/keystore.jks
           set -x
 
-
-      - name: Create Gradle Properties
+      # 4. Gradle Properties 설정
+      - name: Configure Gradle Properties
         run: |
           echo "MYAPP_UPLOAD_STORE_FILE=keystore.jks" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_ALIAS=$ANDROID_KEY_ALIAS" >> android/gradle.properties
           echo "MYAPP_UPLOAD_STORE_PASSWORD=$ANDROID_KEYSTORE_PASSWORD" >> android/gradle.properties
           echo "MYAPP_UPLOAD_KEY_PASSWORD=$ANDROID_KEY_PASSWORD" >> android/gradle.properties
 
-      - name: Version Update
-        run: |
-          awk '/^version:/ {split($2, a, "+"); a[2]=a[2]+1; $0="version: "a[1]"+"a[2]}1' pubspec.yaml > temp && mv temp pubspec.yaml
-          echo "Updated versionCode in build.gradle"
-          git config --global user.email "$COMMIT_EMAIL"
-          git config --global user.name "$COMMIT_AUTHOR"
-          echo "Updated version in pubspec.yaml"
-          git add pubspec.yaml
-          git commit -m 'Incremented version number'
-          git push
+      # 5. Flutter 패키지 설치
+      - name: Install Dependencies
+        run: flutter pub get
 
-      - name: Build AAB
-        run: |
-          cd android
-          ./gradlew bundleRelease
-          echo "aab 파일 완성"
+      # 6. Flutter Android 앱 빌드 (Release)
+      - name: Build Release AAB
+        run: flutter build appbundle
 
+      # 7. 결과물 아티팩트 업로드
+      - name: Upload AAB
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.aab
+          path: build/app/outputs/bundle/release/app-release.aab
+
+      # 8. Fastlane 설치 (Google Play 배포용)
       - name: Setup Fastlane
         run: gem install fastlane --user-install
 
-      - name: Decode SUPPLY_JSON_KEY (Fastlane)
+      # 9. Fastlane용 JSON 키 복호화 및 설정
+      - name: Decode Fastlane JSON Key
         run: |
           set +x
           echo "$SUPPLY_JSON_KEY" | base64 --decode > android/supply.json
           set -x
 
-      - name: Set Environment Variable
-        run: echo "SUPPLY_JSON_KEY=./supply.json" >> $GITHUB_ENV
-
-      - name: Run Fastlane
+      # 10. 앱 Google Play 업로드 (내부 테스트 트랙)
+      - name: Deploy to Google Play
         run: |
           cd android
           if ! fastlane supply init ; then echo "fastlane supply init failed, continuing..."; fi
           if ! fastlane supply --track internal --release-status draft --aab ../build/app/outputs/bundle/release/app-release.aab ; then echo "fastlane supply upload failed, continuing..."; fi
 
   ios-build:
-    name: Build & Deploy iOS
+    name: Build & Deploy iOS App
     runs-on: macos-latest
+
     steps:
+      # 1. 레포지토리 체크아웃
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      # 2. Flutter 설치
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
         with:
-          node-version: lts
+          flutter-version: 'stable'
 
-      - name: Install Dependencies
-        run: npm install
+      # 3. CocoaPods 설치
+      - name: Install CocoaPods
+        run: |
+          brew install cocoapods
+          pod setup
 
+      # 4. Fastlane 설치
       - name: Install Fastlane
         run: gem install fastlane
 
-      - name: Setup Match
+      # 5. Fastlane용 인증서 설정
+      - name: Configure Fastlane Match
         run: |
           echo "$APP_STORE_CONNECT_API_PRIVATE_KEY" | base64 --decode > AuthKey.p8
-          fastlane match appstore --readonly
+          fastlane match appstore --readonly --api_key_path AuthKey.p8
 
+      # 6. Flutter iOS 앱 빌드
+      - name: Build iOS Release
+        run: flutter build ipa --release
 
-      - name: Build iOS App
+      # 7. 결과물 업로드
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: app-release.ipa
+          path: build/ios/ipa
+
+      # 8. App Store Connect에 앱 업로드
+      - name: Deploy to TestFlight (App Store)
         run: |
           cd ios
-          xcodebuild -workspace rn.xcworkspace \
-            -scheme Archive \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath $PWD/build/rn.xcarchive archive
-          xcodebuild -exportArchive \
-            -archivePath $PWD/build/rn.xcarchive \
-            -exportOptionsPlist exportOptions.plist \
-            -exportPath $PWD/build
-
-      - name: Upload to TestFlight
-        run: fastlane pilot upload --ipa ios/build/rn.ipa
+          fastlane pilot upload --ipa ../build/ios/ipa/app-release.ipa
