@@ -32,10 +32,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(findProperty("MYAPP_UPLOAD_STORE_FILE")?.toString() ?: "debug.keystore")
-            storePassword = findProperty("MYAPP_UPLOAD_STORE_PASSWORD")?.toString() ?: "android"
-            keyAlias = findProperty("MYAPP_UPLOAD_KEY_ALIAS")?.toString() ?: "androiddebugkey"
-            keyPassword = findProperty("MYAPP_UPLOAD_KEY_PASSWORD")?.toString() ?: "android"
+            storeFile = file(findProperty("MYAPP_UPLOAD_STORE_FILE")?.toString())
+            storePassword = findProperty("MYAPP_UPLOAD_STORE_PASSWORD")?.toString()
+            keyAlias = findProperty("MYAPP_UPLOAD_KEY_ALIAS")?.toString()
+            keyPassword = findProperty("MYAPP_UPLOAD_KEY_PASSWORD")?.toString()
         }
     }
 
