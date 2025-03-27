@@ -68,9 +68,7 @@ jobs:
 
       - name: Build AAB
         run: |
-          cd android
-          ./gradlew bundleRelease
-          echo "aab 파일 완성"
+          flutter build appbundle
 
       - name: Setup Fastlane
         run: gem install fastlane --user-install
